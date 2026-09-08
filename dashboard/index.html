@@ -11,6 +11,7 @@
     --bg: #0d1117; --panel: #161b22; --border: #21262d;
     --text: #e6edf3; --muted: #8b949e;
     --air: #f0883e; --temp: #58a6ff; --noise: #3fb950;
+    --amber: #d29922; --green: #3fb950; --red: #f85149;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text);
@@ -38,6 +39,64 @@
   canvas { max-height: 260px; }
   .foot { color: var(--muted); font-size: 12px; margin-top: 20px; }
   code { background: var(--panel); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+
+  /* x402 section */
+  .x402-head { display: flex; align-items: center; gap: 10px; margin: 24px 0 10px; }
+  .x402-head h2 { margin: 0; font-size: 15px; }
+  .pill { display: inline-block; border-radius: 999px; padding: 1px 9px; font-size: 11px; font-weight: 600;
+    border: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
+  .pill.amber { color: var(--amber); border-color: rgba(210,153,34,.45); background: rgba(210,153,34,.09); }
+  .pill.green { color: var(--green); border-color: rgba(63,185,80,.45); background: rgba(63,185,80,.09); }
+  .pill.red   { color: var(--red);   border-color: rgba(248,81,73,.45);  background: rgba(248,81,73,.09); }
+  .pill.blue  { color: var(--temp);  border-color: rgba(88,166,255,.45); background: rgba(88,166,255,.09); }
+
+  .dataset-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--border); }
+  .dataset-row:first-of-type { border-top: 0; padding-top: 2px; }
+  .dataset-row .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .dataset-row .name { font-weight: 600; }
+  .dataset-row .meta { color: var(--muted); font-size: 12px; }
+  .dataset-row .grow { flex: 1; }
+  .dataset-row button { padding: 3px 10px; font-size: 12px; border-radius: 6px; }
+
+  .buy-btn { background: rgba(210,153,34,.12); color: var(--amber); border: 1px solid rgba(210,153,34,.5);
+    font-weight: 600; padding: 8px 16px !important; border-radius: 6px; font-size: 14px; }
+  .buy-btn:hover { background: rgba(210,153,34,.2); border-color: var(--amber); }
+  .buy-btn:disabled { opacity: .55; cursor: wait; }
+
+  .steps { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 14px 0 10px; }
+  .step { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; background: #10151c;
+    min-height: 86px; position: relative; }
+  .step .s-title { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .step .s-req { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 11px; color: var(--text);
+    margin-top: 6px; word-break: break-all; }
+  .step .s-status { position: absolute; top: 8px; right: 10px; font-size: 11px; font-weight: 700; font-family: ui-monospace, Menlo, monospace; }
+  .step .s-note { color: var(--muted); font-size: 11px; margin-top: 6px; }
+  .step.active { border-color: var(--amber); }
+  .step.done { border-color: rgba(63,185,80,.5); }
+  .step .spin { display: inline-block; width: 10px; height: 10px; border: 2px solid var(--muted);
+    border-top-color: var(--amber); border-radius: 50%; animation: spin .8s linear infinite; vertical-align: -1px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .st-402 { color: var(--amber); } .st-200 { color: var(--green); } .st-err { color: var(--red); }
+
+  .jsonbox { background: #0a0e13; border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 11.5px; line-height: 1.55;
+    color: #c9d1d9; overflow-x: auto; white-space: pre; margin: 8px 0 0; }
+  .jsonbox .k { color: #79c0ff; } .jsonbox .s { color: #a5d6ff; } .jsonbox .n { color: #f2cc60; }
+  .settle-line { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center; }
+
+  .rows-table { width: 100%; border-collapse: collapse; font-size: 11.5px; font-family: ui-monospace, Menlo, monospace; margin-top: 8px; }
+  .rows-table th { text-align: left; color: var(--muted); font-weight: 500; border-bottom: 1px solid var(--border); padding: 3px 8px 3px 0; }
+  .rows-table td { border-bottom: 1px solid rgba(33,38,45,.6); padding: 3px 8px 3px 0; color: #c9d1d9; }
+
+  .term { background: #0a0e13; border: 1px solid var(--border); border-radius: 8px; margin-top: 12px; overflow: hidden; }
+  .term .bar { display: flex; align-items: center; gap: 6px; padding: 7px 12px; background: #10151c; border-bottom: 1px solid var(--border); }
+  .term .bar .t { width: 10px; height: 10px; border-radius: 50%; background: #30363d; }
+  .term .bar .t:first-child { background: #f85149; } .term .bar .t:nth-child(2) { background: #d29922; } .term .bar .t:nth-child(3) { background: #3fb950; }
+  .term .bar .ttl { margin-left: 8px; color: var(--muted); font-size: 11px; font-family: ui-monospace, Menlo, monospace; }
+  .term pre { margin: 0; padding: 12px 14px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11.5px; line-height: 1.6; color: #c9d1d9; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+  .term .prompt { color: #7ee787; } .term .c402 { color: #d29922; font-weight: 700; } .term .c200 { color: #3fb950; font-weight: 700; }
+  .term .dim { color: #6e7681; } .term .hl { color: #a5d6ff; }
 </style>
 </head>
 <body>
@@ -79,10 +138,77 @@
     </div>
   </div>
 
+  <!-- ============ x402 metered access ============ -->
+  <div class="x402-head">
+    <h2>Metered API access</h2>
+    <span class="pill amber">x402 · exact scheme</span>
+    <span class="pill blue">USDC on Base</span>
+    <span class="pill" id="mock-pill">mock settlement (dev)</span>
+  </div>
+
+  <div class="grid" style="grid-template-columns: minmax(280px, 1fr) minmax(420px, 2fr);">
+    <div class="panel">
+      <h2>Datasets</h2>
+      <div id="datasets"></div>
+      <p>Raw files and MCP queries are free. HTTP access is metered per call over x402 —
+         no account, no API key, pay per request.</p>
+    </div>
+
+    <div class="panel">
+      <h2 style="display:flex; align-items:center; gap:12px;">
+        x402 client
+        <span style="flex:1"></span>
+        <select id="x402-sensor" style="font-size:12px; padding:4px 8px;">
+          <option value="noise">noise</option>
+          <option value="air_quality">air_quality</option>
+          <option value="temperature">temperature</option>
+        </select>
+        <button class="buy-btn" id="buy">Buy API access — $0.001/call</button>
+      </h2>
+
+      <div class="steps">
+        <div class="step" id="step1">
+          <div class="s-title">1 · request, unpaid</div>
+          <div class="s-status" id="st1"></div>
+          <div class="s-req">GET /v1/readings</div>
+          <div class="s-note" id="sn1">no X-PAYMENT header</div>
+        </div>
+        <div class="step" id="step2">
+          <div class="s-title">2 · sign payment</div>
+          <div class="s-status" id="st2"></div>
+          <div class="s-req">X-PAYMENT: base64(payload)</div>
+          <div class="s-note" id="sn2">mock wallet, USDC on Base</div>
+        </div>
+        <div class="step" id="step3">
+          <div class="s-title">3 · retry, paid</div>
+          <div class="s-status" id="st3"></div>
+          <div class="s-req">GET /v1/readings + X-PAYMENT</div>
+          <div class="s-note" id="sn3">settlement proof returned</div>
+        </div>
+      </div>
+
+      <div class="settle-line" id="settle-line" hidden>
+        <span class="pill green" id="settle-tx"></span>
+        <span class="pill" id="settle-payer"></span>
+        <span class="pill" id="settle-cost"></span>
+      </div>
+
+      <div id="flow-json" hidden></div>
+      <div id="rows-wrap" hidden></div>
+
+      <div class="term">
+        <div class="bar"><span class="t"></span><span class="t"></span><span class="t"></span>
+          <span class="ttl">x402 round trip — live against the API</span></div>
+        <pre id="term">Waiting. Press “Buy API access” to run the flow.</pre>
+      </div>
+    </div>
+  </div>
+
   <p class="foot">
     Simulated data, reproducible with <code>python3 simulator/simulate.py --seed 42</code>.
     Chart.js from CDN. The same readings are queryable over MCP via
-    <code>query_readings</code>; metered HTTP access arrives with the x402 paywall (day 3).
+    <code>query_readings</code>; the button above runs a real 402 → pay → 200 round trip
+    against the metered HTTP API (mock settlement in dev mode).
   </p>
 </main>
 
@@ -92,10 +218,19 @@ const SENSORS = {
   temperature: { label: "temperature", unit: "C",      color: "#58a6ff" },
   noise:       { label: "noise",       unit: "dB",     color: "#3fb950" },
 };
+const API_BASE = new URLSearchParams(location.search).get("api")
+  || `${location.protocol}//${location.hostname || "127.0.0.1"}:8793`;
+const MOCK_PAYER = "0x3fa85f64571a2a9c911f1c49a1c0a7e2b6d4f8a1";
+const RESOURCE = "/v1/readings";
+
 let ROWS = [];
 let tsChart, siteChart, anomChart;
+let running = false;
 
 const $ = (id) => document.getElementById(id);
+const b64j = (o) => btoa(JSON.stringify(o));
+const unb64 = (s) => { try { return JSON.parse(atob(s)); } catch { return null; } };
+const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 function fmtHour(ts) {
   const d = new Date(ts);
@@ -200,13 +335,34 @@ function drawAnom() {
 
 function label(r) { return `${r.sensor_type} ${r.device_id} @ ${r.site}`; }
 
+function drawDatasets() {
+  $("datasets").innerHTML = Object.entries(SENSORS).map(([k, s]) => {
+    const rows = ROWS.filter(r => r.sensor_type === k);
+    const devs = new Set(rows.map(r => r.device_id)).size;
+    const anom = rows.filter(r => r.anomaly).length;
+    return `
+    <div class="dataset-row">
+      <span class="dot" style="background:${s.color}"></span>
+      <div class="grow">
+        <span class="name">${s.label}</span>
+        <div class="meta">${rows.length.toLocaleString()} readings · ${devs} devices · ${s.unit} · ${anom} anomalies</div>
+      </div>
+      <span class="pill amber">metered · $0.001/call</span>
+      <span class="pill">MCP free</span>
+      <button data-buy="${k}" title="run the x402 flow for ${s.label}">Buy API access</button>
+    </div>`;
+  }).join("");
+  document.querySelectorAll("[data-buy]").forEach(b =>
+    b.addEventListener("click", () => { $("x402-sensor").value = b.dataset.buy; runX402(); }));
+}
+
 function downloadCSV() {
   const rows = filtered();
   if (!rows.length) return;
   const cols = Object.keys(rows[0]);
-  const esc = (v) => /[",\n]/.test(v) ? `"${String(v).replace(/"/g, '""')}"` : v;
+  const q = (v) => /[",\n]/.test(v) ? `"${String(v).replace(/"/g, '""')}"` : v;
   const csv = [cols.join(",")]
-    .concat(rows.map(r => cols.map(c => esc(r[c])).join(","))).join("\n");
+    .concat(rows.map(r => cols.map(c => q(r[c])).join(","))).join("\n");
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
   a.download = "sensormesh-filtered.csv";
@@ -215,6 +371,124 @@ function downloadCSV() {
 }
 
 function redraw() { statsCards(filtered()); drawTS(); drawSite(); drawAnom(); }
+
+// ------------------------------------------------------------------ x402 flow
+
+function term(msg) { $("term").innerHTML = msg; }
+function setStatus(id, html) { $(id).innerHTML = html; }
+function stepState(stepId, cls) { $(stepId).classList.remove("active", "done"); if (cls) $(stepId).classList.add(cls); }
+
+function shortHeader(h) { return h.length > 68 ? h.slice(0, 65) + "…" : h; }
+
+async function runX402() {
+  if (running) return;
+  running = true;
+  const sensor = $("x402-sensor").value;
+  const url = `${API_BASE}${RESOURCE}?sensor=${sensor}&limit=5`;
+
+  ["step1", "step2", "step3"].forEach(s => stepState(s, null));
+  ["st1", "st2", "st3"].forEach(s => setStatus(s, ""));
+  $("settle-line").hidden = true;
+  $("flow-json").hidden = true;
+  $("rows-wrap").hidden = true;
+  $("buy").disabled = true;
+  term(esc(`$ curl -i '${url}'\n`) + `<span class="dim">→ sending unpaid request…</span>`);
+
+  let t0 = performance.now(), resp, reqs;
+  try {
+    resp = await fetch(url);
+  } catch (e) {
+    setStatus("st1", `<span class="st-err">ERR</span>`);
+    term(esc(`$ curl -i '${url}'\n`) + `<span class="st-err">connection refused — API offline</span>\n\n` +
+      `<span class="dim">start it: cd mcp &amp;&amp; SENSORMESH_MOCK_SETTLEMENT=1 PORT=8793 node api.js</span>`);
+    stepState("step1", "active");
+    $("buy").disabled = false; running = false;
+    return;
+  }
+  const ms1 = Math.round(performance.now() - t0);
+  const reqB64 = resp.headers.get("X-PAYMENT") || "";
+  reqs = unb64(reqB64);
+
+  // step 1: the 402
+  stepState("step1", resp.status === 402 ? "done" : "active");
+  setStatus("st1", `<span class="${resp.status === 402 ? "st-402" : "st-err"}">${resp.status}</span>` +
+    `<span class="dim"> · ${ms1} ms</span>`);
+  $("sn1").textContent = resp.status === 402
+    ? "payment requirements in X-PAYMENT + body"
+    : `unexpected status ${resp.status}`;
+  term(esc(`$ curl -i '${url}'`) + `\n` +
+    `<span class="c402">HTTP/1.1 ${resp.status} ${resp.statusText}</span>\n` +
+    `<span class="dim">x-payment: ${esc(shortHeader(reqB64))}</span>\n` +
+    `<span class="hl">${esc(JSON.stringify(reqs, null, 1).slice(0, 600))}</span>`);
+
+  if (resp.status !== 402 || !reqs) {
+    $("buy").disabled = false; running = false;
+    return;
+  }
+
+  // step 2: sign (mock wallet) — build the x402 payment payload
+  stepState("step2", "active");
+  setStatus("st2", `<span class="spin"></span>`);
+  $("sn2").textContent = `signing for ${reqs.asset?.slice(0, 10)}… on ${reqs.network}`;
+  await new Promise(r => setTimeout(r, 650));
+  const payment = {
+    x402Version: reqs.x402Version,
+    scheme: reqs.scheme,
+    resource: reqs.resource,
+    payload: {
+      from: MOCK_PAYER,
+      authorization: { to: reqs.payTo, value: reqs.maxAmountRequired, asset: reqs.asset },
+    },
+  };
+  const payB64 = b64j(payment);
+  stepState("step2", "done");
+  setStatus("st2", `<span class="st-200">signed</span>`);
+  $("sn2").textContent = `mock wallet ${MOCK_PAYER.slice(0, 10)}… · ${reqs.maxAmountRequired} base units`;
+  $("flow-json").hidden = false;
+  $("flow-json").innerHTML = `<div class="jsonbox"><span class="k">X-PAYMENT</span> = base64(<span class="n">${esc(payB64.slice(0, 56))}…</span>)\n` +
+    `decoded: { x402Version: <span class="n">${payment.x402Version}</span>, scheme: <span class="s">"${payment.scheme}"</span>, resource: <span class="s">"${payment.resource}"</span>, payload.from: <span class="s">"${payment.payload.from}"</span> }</div>`;
+
+  // step 3: retry with payment
+  term($("term").innerHTML + `\n\n` + esc(`$ curl -H 'X-PAYMENT: ${shortHeader(payB64)}' '${url}'`) +
+    `\n<span class="dim">→ settling…</span>`);
+  stepState("step3", "active");
+  setStatus("st3", `<span class="spin"></span>`);
+  const t1 = performance.now();
+  const resp2 = await fetch(url, { headers: { "X-PAYMENT": payB64 } });
+  const ms2 = Math.round(performance.now() - t1);
+  const settleB64 = resp2.headers.get("X-PAYMENT-RESPONSE") || "";
+  const settlement = unb64(settleB64);
+  const ok = resp2.ok;
+  stepState("step3", ok ? "done" : "active");
+  setStatus("st3", `<span class="${ok ? "st-200" : "st-err"}">${resp2.status}</span>` +
+    `<span class="dim"> · ${ms2} ms</span>`);
+  $("sn3").textContent = ok ? "data delivered, settlement proof in X-PAYMENT-RESPONSE" : "settlement failed";
+
+  if (ok) {
+    const data = await resp2.json();
+    $("settle-line").hidden = false;
+    $("settle-tx").textContent = `tx ${settlement?.transaction || "?"}`;
+    $("settle-payer").textContent = `payer ${settlement?.payer || "?"}`;
+    $("settle-cost").textContent = `paid $0.001 · ${data.rows.length} rows`;
+    $("rows-wrap").hidden = false;
+    const first = data.rows.slice(0, 3);
+    $("rows-wrap").innerHTML = `
+      <table class="rows-table">
+        <tr><th>timestamp</th><th>device</th><th>site</th><th>value</th><th>anomaly</th></tr>
+        ${first.map(r => `<tr><td>${r.timestamp.slice(11)}</td><td>${r.device_id}</td><td>${r.site}</td><td>${r.value} ${r.unit}</td><td>${r.anomaly || "—"}</td></tr>`).join("")}
+      </table>
+      <p class="s-note" style="color:var(--muted);font-size:11px">+${Math.max(0, data.rows.length - first.length)} more rows in response</p>`;
+    term($("term").innerHTML.replace(`<span class="dim">→ settling…</span>`,
+      `<span class="c200">HTTP/1.1 200 OK</span>\n` +
+      `<span class="dim">x-payment-response: ${esc(shortHeader(settleB64))}</span>\n` +
+      `<span class="hl">${esc(JSON.stringify(settlement))}</span>\n\n` +
+      `<span class="dim">${esc(JSON.stringify(data.rows.slice(0, 2)))} …</span>`));
+  } else {
+    term($("term").innerHTML.replace(`<span class="dim">→ settling…</span>`,
+      `<span class="st-err">HTTP/1.1 ${resp2.status} ${esc(resp2.statusText)}</span>`));
+  }
+  $("buy").disabled = false; running = false;
+}
 
 fetch("readings.jsonl")
   .then(r => r.text())
@@ -226,7 +500,13 @@ fetch("readings.jsonl")
       $("day").insertAdjacentHTML("beforeend", `<option>${d}</option>`));
     ["site", "sensor", "day", "hidelong"].forEach(id => $(id).addEventListener("change", redraw));
     $("export").addEventListener("click", downloadCSV);
+    $("buy").addEventListener("click", runX402);
     redraw();
+    drawDatasets();
+    // probe the API so the mock-settlement pill reflects reality
+    fetch(`${API_BASE}/health`).then(r => r.json()).then(h => {
+      $("mock-pill").textContent = h.mock_settlement ? "mock settlement (dev)" : "live settlement";
+    }).catch(() => { $("mock-pill").textContent = "API offline"; });
   })
   .catch(e => { $("msg").textContent = "failed to load readings.jsonl: " + e; });
 </script>

@@ -4,7 +4,38 @@ Open IoT sensor data commons. Every city deploys air quality, temperature, and n
 
 SensorMesh flips that. Devices write readings to an open catalog with stable schemas. Anyone can pull the raw files, query them through MCP from any LLM session, or pay per call for metered HTTP access. No account, no vendor portal, no export button that emails you a zip in 48 hours.
 
-**Status: day 2 of the VoltHacks build (Sep 8–13).** Simulator, sample data, MCP server, and dashboard shipped day 1. Day 2 added the shared query engine (`mcp/lib/query.js`) and the metered HTTP API (`mcp/api.js`) with x402 payments, live in dev mode (mock settlement) behind a cloudflared tunnel. Production facilitator + real wallet land next.
+**Status: day 3 of the VoltHacks build (Sep 8–13).** Simulator, sample data, MCP server, and dashboard shipped day 1. Day 2 added the shared query engine (`mcp/lib/query.js`) and the metered HTTP API (`mcp/api.js`) with x402 payments, live in dev mode (mock settlement) behind a cloudflared tunnel. Day 3 turned the dashboard into an x402 client: a **Buy API access** button runs the real 402 → sign → 200 round trip in the browser, with per-dataset metered badges. Production facilitator + real wallet land next.
+
+## Architecture
+
+```
+simulator/simulate.py --seed 42
+        │  writes
+        ▼
+data/sensormesh-sample.csv + .jsonl
+        │
+        │  one data file, three consumers
+        ├───────────────────────────────► dashboard/index.html (browser)
+        │                                         │
+        ▼                                         │ fetch
+┌───────────────────────────┐                     │
+│   mcp/lib/query.js        │                     │
+│   filters · pagination    │                     │
+│   stats · sha256 pinning  │                     │
+└──────┬─────────────┬──────┘                     │
+       │             │                            │
+┌──────┴──────┐ ┌────┴────────────────────────────▼─────────────┐
+│ mcp/index.js│ │ mcp/api.js (express, :8793)                   │
+│ MCP over    │ │ /v1/sensors /v1/stats    free                 │
+│ stdio       │ │ /v1/preview     10 rows  free                 │
+│ list_sensors│ │ /v1/readings            $0.001/call           │
+│ query_…     │ │ x402 "exact" scheme · USDC on Base            │
+│ get_stats   │ │   verifyPayment() ──► facilitator seam (mock) │
+└─────────────┘ │   settlePayment() ──► facilitator seam (mock) │
+                └───────────────────────────────────────────────┘
+```
+
+The dashboard charts read `readings.jsonl` directly (free path). Its **Buy API access** button is a real x402 client: it fetches the API, decodes the `X-PAYMENT` requirements from the 402, signs a mock payment, retries with the `X-PAYMENT` header, and renders the settlement receipt from `X-PAYMENT-RESPONSE` — the same round trip you'd get with curl or an SDK.
 
 ## What's in the box
 
@@ -15,7 +46,7 @@ SensorMesh flips that. Devices write readings to an open catalog with stable sch
 | MCP server | `list_sensors`, `query_readings`, `get_stats`. Filter by device, site, sensor type, time range, anomaly flag. 100 rows per call. | `mcp/index.js` |
 | Shared query engine | One implementation of filters, pagination, and hash pinning backing both MCP and HTTP. | `mcp/lib/query.js` |
 | HTTP API (x402) | `/v1/sensors` and `/v1/stats` free, `/v1/preview` 10 free rows, `/v1/readings` $0.001 per call over x402 (exact scheme, USDC on Base). | `mcp/api.js` |
-| Dashboard | Vanilla JS + Chart.js from CDN. Time series, per-site means, anomaly counts, CSV export of the current filter. | `dashboard/index.html` |
+| Dashboard | Vanilla JS + Chart.js from CDN. Time series, per-site means, anomaly counts, CSV export of the current filter — plus a built-in x402 client: **Buy API access** runs the 402 → pay → 200 round trip against the API and shows the settlement proof. Per-dataset rows carry `metered $0.001/call` and `MCP free` badges. | `dashboard/index.html` |
 
 ## Quick start
 
@@ -104,6 +135,8 @@ Run it yourself:
 cd mcp && SENSORMESH_MOCK_SETTLEMENT=1 PORT=8793 node api.js
 ```
 
+Then open the dashboard and press **Buy API access** — it performs exactly the curl sequence below in the browser, with the payment requirements, signed payload, and settlement receipt rendered at each step.
+
 ## Why sensors, why a commons
 
 A weather API tells you what the airport measured. A SensorMesh reading tells you what the street measured: the block that floods, the intersection where PM2.5 triples at school pickup, the park that's 3 degrees cooler than the plaza. That granularity is exactly what urban-health research, city planning, and climate adaptation need, and it's exactly what current deployments hoard.
@@ -112,7 +145,7 @@ The commons has three access tiers:
 
 1. **Raw files** — free, in this repo. Generate more with the simulator.
 2. **MCP** — free, any LLM session can query the full readings with filters and stats.
-3. **Metered HTTP** — per-call pricing over x402, for production apps that want an SLA-shaped endpoint without downloading anything. In progress; lands with the day 3 build.
+3. **Metered HTTP** — per-call pricing over x402, for production apps that want an SLA-shaped endpoint without downloading anything. Live in dev mode with mock settlement; flipping to a real facilitator touches only the two seam functions.
 
 Simulated data keeps the schema honest while real hardware partnerships come together: every consumer of the API (human, LLM, or dashboard) works against the exact shape real devices will publish.
 

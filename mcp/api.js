@@ -103,6 +103,12 @@ app.disable("x-powered-by");
 app.use((req, res, next) => {
   res.set("Access-Control-Allow-Origin", "*");
   res.set("Access-Control-Expose-Headers", "X-PAYMENT, X-PAYMENT-RESPONSE");
+  if (req.method === "OPTIONS") {
+    res.set("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "X-PAYMENT, Content-Type");
+    res.sendStatus(204);
+    return;
+  }
   next();
 });
 

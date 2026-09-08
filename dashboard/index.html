@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SensorMesh — open sensor data commons</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --border: #21262d;
+    --text: #e6edf3; --muted: #8b949e;
+    --air: #f0883e; --temp: #58a6ff; --noise: #3fb950;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.5 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  header { padding: 20px 24px 12px; }
+  h1 { margin: 0; font-size: 20px; font-weight: 600; }
+  header p { margin: 4px 0 0; color: var(--muted); }
+  header a { color: var(--temp); text-decoration: none; }
+  main { padding: 0 24px 40px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .panel h2 { margin: 0 0 10px; font-size: 14px; font-weight: 600; }
+  .panel p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px; margin: 16px 0; align-items: center; }
+  .controls label { display: flex; gap: 6px; align-items: center; color: var(--muted); }
+  select, button {
+    background: var(--panel); color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 10px; font: inherit; cursor: pointer;
+  }
+  button:hover, select:hover { border-color: var(--muted); }
+  .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 16px 0; }
+  .stat { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .stat .n { font-size: 20px; font-weight: 700; }
+  .stat .l { color: var(--muted); font-size: 12px; }
+  canvas { max-height: 260px; }
+  .foot { color: var(--muted); font-size: 12px; margin-top: 20px; }
+  code { background: var(--panel); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>SensorMesh</h1>
+  <p>Open sensor data commons — 9 devices, 3 sites, air quality / temperature / noise.
+     Data: <a href="readings.jsonl">readings.jsonl</a> · MCP: <code>@jayjex/sensormesh-mcp</code></p>
+</header>
+<main>
+  <div class="stat-row" id="stats"></div>
+
+  <div class="controls">
+    <label>site <select id="site"><option value="">all sites</option></select></label>
+    <label>sensor <select id="sensor">
+      <option value="">all</option>
+      <option value="air_quality">air quality (PM2.5)</option>
+      <option value="temperature">temperature</option>
+      <option value="noise">noise</option>
+    </select></label>
+    <label>day <select id="day"><option value="">all</option></select></label>
+    <label><input type="checkbox" id="hidelong"> hide anomalies</label>
+    <button id="export">download CSV</button>
+  </div>
+
+  <div class="panel" style="margin-bottom:16px">
+    <h2>Readings over time</h2>
+    <canvas id="ts"></canvas>
+    <p id="msg"></p>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Mean by site (selected sensor)</h2>
+      <canvas id="bysite"></canvas>
+    </div>
+    <div class="panel">
+      <h2>Anomalies by type</h2>
+      <canvas id="byanom"></canvas>
+    </div>
+  </div>
+
+  <p class="foot">
+    Simulated data, reproducible with <code>python3 simulator/simulate.py --seed 42</code>.
+    Chart.js from CDN. The same readings are queryable over MCP via
+    <code>query_readings</code>; metered HTTP access arrives with the x402 paywall (day 3).
+  </p>
+</main>
+
+<script>
+const SENSORS = {
+  air_quality: { label: "air quality", unit: "ug/m3", color: "#f0883e" },
+  temperature: { label: "temperature", unit: "C",      color: "#58a6ff" },
+  noise:       { label: "noise",       unit: "dB",     color: "#3fb950" },
+};
+let ROWS = [];
+let tsChart, siteChart, anomChart;
+
+const $ = (id) => document.getElementById(id);
+
+function fmtHour(ts) {
+  const d = new Date(ts);
+  return d.getHours().toString().padStart(2, "0") + ":" + d.getMinutes().toString().padStart(2, "0");
+}
+
+function filtered() {
+  const site = $("site").value, sensor = $("sensor").value,
+        day = $("day").value, hide = $("hidelong").checked;
+  return ROWS.filter(r =>
+    (!site || r.site === site) &&
+    (!sensor || r.sensor_type === sensor) &&
+    (!day || r.timestamp.startsWith(day)) &&
+    (!hide || r.anomaly === ""));
+}
+
+function statsCards(rows) {
+  const seen = new Set(rows.map(r => r.device_id));
+  const anom = rows.filter(r => r.anomaly).length;
+  $("stats").innerHTML = `
+    <div class="stat"><div class="n">${seen.size}</div><div class="l">devices</div></div>
+    <div class="stat"><div class="n">${rows.length.toLocaleString()}</div><div class="l">readings shown</div></div>
+    <div class="stat"><div class="n">${anom}</div><div class="l">anomalous</div></div>
+    <div class="stat"><div class="n">${ROWS.length ? rows[0].timestamp.slice(0, 10) : "—"}</div><div class="l">window start</div></div>`;
+}
+
+function drawTS() {
+  const rows = filtered();
+  $("msg").textContent = `${rows.length.toLocaleString()} readings` +
+    (rows.length > 400 ? " (points thinned for rendering)" : "");
+  const by = {};
+  rows.forEach(r => { (by[label(r)] ??= []).push(r); });
+  const datasets = Object.entries(by).map(([k, pts]) => {
+    const s = SENSORS[k.split(" ")[0]];
+    const hasAnom = pts.some(p => p.anomaly);
+    const stride = Math.max(1, Math.ceil(pts.length / 400));
+    return {
+      label: k,
+      data: pts.filter((_, i) => i % stride === 0).map(p => ({ x: p.timestamp, y: p.value })),
+      borderColor: s.color, backgroundColor: s.color,
+      borderWidth: 1.4, pointRadius: 0, tension: 0.25,
+      borderDash: hasAnom ? [3, 2] : undefined,
+    };
+  });
+  tsChart?.destroy();
+  tsChart = new Chart($("ts"), {
+    type: "line",
+    data: { datasets },
+    options: {
+      interaction: { mode: "nearest", intersect: false },
+      scales: {
+        x: { type: "time", time: { tooltipFormat: "HH:mm" },
+             ticks: { color: "#8b949e", maxTicksLimit: 10 }, grid: { color: "#21262d" } },
+        y: { ticks: { color: "#8b949e" }, grid: { color: "#21262d" } },
+      },
+      plugins: {
+        legend: { labels: { color: "#e6edf3", boxWidth: 12, font: { size: 10 } } },
+        tooltip: { callbacks: { title: (it) => fmtHour(it[0].raw.x) } },
+      },
+    },
+  });
+}
+
+function drawSite() {
+  const sensor = $("sensor").value || "air_quality";
+  const rows = filtered().filter(r => r.sensor_type === sensor && r.anomaly === "");
+  const sums = {};
+  rows.forEach(r => {
+    (sums[r.site] ??= { s: 0, n: 0 });
+    sums[r.site].s += r.value; sums[r.site].n++;
+  });
+  const sites = Object.keys(sums);
+  const means = sites.map(k => sums[k].s / sums[k].n);
+  const s = SENSORS[sensor];
+  siteChart?.destroy();
+  siteChart = new Chart($("bysite"), {
+    type: "bar",
+    data: { labels: sites, datasets: [{ label: `${s.label} mean (${s.unit})`,
+      data: means, backgroundColor: s.color, borderRadius: 4 }] },
+    options: { plugins: { legend: { display: false } },
+      scales: { x: { ticks: { color: "#8b949e" }, grid: { display: false } },
+                y: { ticks: { color: "#8b949e" }, grid: { color: "#21262d" } } } },
+  });
+}
+
+function drawAnom() {
+  const rows = filtered();
+  const counts = {};
+  rows.forEach(r => { if (r.anomaly) counts[r.anomaly] = (counts[r.anomaly] || 0) + 1; });
+  const keys = Object.keys(counts);
+  anomChart?.destroy();
+  anomChart = new Chart($("byanom"), {
+    type: "bar",
+    data: { labels: keys,
+      datasets: [{ label: "anomalous readings", data: keys.map(k => counts[k]),
+        backgroundColor: ["#f85149", "#d29922", "#a371f7", "#39d2c0"], borderRadius: 4 }] },
+    options: { plugins: { legend: { display: false } },
+      scales: { x: { ticks: { color: "#8b949e" }, grid: { display: false } },
+                y: { ticks: { color: "#8b949e" }, grid: { color: "#21262d" }, beginAtZero: true } } },
+  });
+}
+
+function label(r) { return `${r.sensor_type} ${r.device_id} @ ${r.site}`; }
+
+function downloadCSV() {
+  const rows = filtered();
+  if (!rows.length) return;
+  const cols = Object.keys(rows[0]);
+  const esc = (v) => /[",\n]/.test(v) ? `"${String(v).replace(/"/g, '""')}"` : v;
+  const csv = [cols.join(",")]
+    .concat(rows.map(r => cols.map(c => esc(r[c])).join(","))).join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+  a.download = "sensormesh-filtered.csv";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function redraw() { statsCards(filtered()); drawTS(); drawSite(); drawAnom(); }
+
+fetch("readings.jsonl")
+  .then(r => r.text())
+  .then(text => {
+    ROWS = text.trim().split("\n").map(JSON.parse);
+    [...new Set(ROWS.map(r => r.site))].forEach(s =>
+      $("site").insertAdjacentHTML("beforeend", `<option>${s}</option>`));
+    [...new Set(ROWS.map(r => r.timestamp.slice(0, 10)))].forEach(d =>
+      $("day").insertAdjacentHTML("beforeend", `<option>${d}</option>`));
+    ["site", "sensor", "day", "hidelong"].forEach(id => $(id).addEventListener("change", redraw));
+    $("export").addEventListener("click", downloadCSV);
+    redraw();
+  })
+  .catch(e => { $("msg").textContent = "failed to load readings.jsonl: " + e; });
+</script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "name": "@jayjex/sensormesh-mcp",
+  "version": "0.1.0",
+  "description": "MCP server over the SensorMesh open sensor data commons: query simulated air quality, temperature, and noise readings by device, site, sensor, time range, and anomaly flag.",
+  "license": "MIT",
+  "type": "module",
+  "bin": { "sensormesh-mcp": "index.js" },
+  "files": ["index.js"],
+  "engines": { "node": ">=18" },
+  "keywords": [
+    "mcp",
+    "modelcontextprotocol",
+    "iot",
+    "sensors",
+    "smart-cities",
+    "air-quality",
+    "noise",
+    "open-data"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^3.23.8"
+  }
+}

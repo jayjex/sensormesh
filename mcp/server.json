@@ -1,0 +1,10 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.jayjex/sensormesh-mcp",
+  "description": "Query the SensorMesh open sensor data commons over MCP: air quality, temperature, noise readings filtered by device, site, time, anomaly flag.",
+  "repository": {
+    "url": "https://github.com/jayjex/sensormesh",
+    "source": "github"
+  },
+  "version": "0.1.0"
+}

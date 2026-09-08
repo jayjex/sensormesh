@@ -190,8 +190,8 @@ for (const base of ["/v1", ""]) {
 }
 
 app.get("/health", async (req, res) => {
-  const { sha256, rows } = await queryReadings({}, 1, 0);
-  res.json({ ok: true, version: VERSION, mock_settlement: MOCK_SETTLEMENT, rows, sha256, data_file: DATA_PATH });
+  const { total_rows_in_file, sha256 } = await queryReadings({}, 1, 0);
+  res.json({ ok: true, version: VERSION, mock_settlement: MOCK_SETTLEMENT, rows: total_rows_in_file, sha256, data_file: DATA_PATH });
 });
 
 app.listen(PORT, "127.0.0.1", () => {

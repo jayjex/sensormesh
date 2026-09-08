@@ -5,7 +5,7 @@
   "license": "MIT",
   "type": "module",
   "bin": { "sensormesh-mcp": "index.js" },
-  "files": ["index.js"],
+  "files": ["index.js", "lib/query.js", "api.js"],
   "engines": { "node": ">=18" },
   "keywords": [
     "mcp",

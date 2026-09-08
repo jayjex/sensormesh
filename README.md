@@ -4,7 +4,7 @@ Open IoT sensor data commons. Every city deploys air quality, temperature, and n
 
 SensorMesh flips that. Devices write readings to an open catalog with stable schemas. Anyone can pull the raw files, query them through MCP from any LLM session, or pay per call for metered HTTP access. No account, no vendor portal, no export button that emails you a zip in 48 hours.
 
-**Status: day 1 of the VoltHacks build (Sep 8–13).** Simulator, sample data, MCP server, and dashboard are working. HTTP API with x402 metered access lands next.
+**Status: day 2 of the VoltHacks build (Sep 8–13).** Simulator, sample data, MCP server, and dashboard shipped day 1. Day 2 added the shared query engine (`mcp/lib/query.js`) and the metered HTTP API (`mcp/api.js`) with x402 payments, live in dev mode (mock settlement) behind a cloudflared tunnel. Production facilitator + real wallet land next.
 
 ## What's in the box
 
@@ -12,7 +12,9 @@ SensorMesh flips that. Devices write readings to an open catalog with stable sch
 |---|---|---|
 | Device simulator | Python, stdlib only. Generates air quality, temperature, and noise readings with 24h curves, drift, and injected anomalies (spike / stuck / flatline / passby). Seeded, so outputs are reproducible. | `simulator/simulate.py` |
 | Sample data | 1,296 readings, 9 devices, 3 sites, one full day at 10-minute cadence. CSV + JSONL. | `data/`, `dashboard/readings.jsonl` |
-| MCP server | `list_sensors`, `query_readings`, `get_stats`. Filter by device, site, sensor type, time range, anomaly flag. 100 rows per call. | `mcp/` |
+| MCP server | `list_sensors`, `query_readings`, `get_stats`. Filter by device, site, sensor type, time range, anomaly flag. 100 rows per call. | `mcp/index.js` |
+| Shared query engine | One implementation of filters, pagination, and hash pinning backing both MCP and HTTP. | `mcp/lib/query.js` |
+| HTTP API (x402) | `/v1/sensors` and `/v1/stats` free, `/v1/preview` 10 free rows, `/v1/readings` $0.001 per call over x402 (exact scheme, USDC on Base). | `mcp/api.js` |
 | Dashboard | Vanilla JS + Chart.js from CDN. Time series, per-site means, anomaly counts, CSV export of the current filter. | `dashboard/index.html` |
 
 ## Quick start
@@ -73,6 +75,34 @@ get_stats({ sensor: "temperature" })
 ```
 
 The response pins the SHA-256 of the data file, so you always know which release you queried. Same pattern as [dataset-mcp](https://github.com/jayjex/dataset-mcp), applied to streaming sensor data instead of static datasets.
+
+## HTTP API (x402)
+
+Same query engine as MCP, served over HTTP with per-call pricing (design in `docs/x402-metered-access.md`):
+
+| endpoint | price | what it returns |
+|---|---|---|
+| `GET /v1/sensors` | free | device/site/sensor inventory |
+| `GET /v1/stats` | free | per-sensor min/mean/max + anomaly counts |
+| `GET /v1/preview` | free | first 10 rows of any filtered query |
+| `GET /v1/readings` | $0.001/call | full filtered query, 100 rows max, JSON or CSV |
+
+x402 flow, exactly per protocol draft 0.2: call `/v1/readings` with no header and get `402` with payment requirements in the `X-PAYMENT` header and body; pay (any x402 client); retry with your payment in `X-PAYMENT`; data comes back with settlement proof in `X-PAYMENT-RESPONSE`.
+
+```bash
+# 1. price the call
+curl -i "$BASE/v1/readings?sensor=noise&limit=5"
+# 2. pay with any x402 wallet, then retry:
+curl -H "X-PAYMENT: <base64 payment>" "$BASE/v1/readings?sensor=noise&limit=5"
+```
+
+Dev mode (`SENSORMESH_MOCK_SETTLEMENT=1`) verifies the payment payload and settles with a mock transaction, so the full round trip runs without a funded wallet. Real settlement plugs into the `verifyPayment` / `settlePayment` seams in `mcp/api.js`.
+
+Run it yourself:
+
+```bash
+cd mcp && SENSORMESH_MOCK_SETTLEMENT=1 PORT=8793 node api.js
+```
 
 ## Why sensors, why a commons
 

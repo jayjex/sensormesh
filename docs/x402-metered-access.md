@@ -1,6 +1,13 @@
 # Metered sensor access over x402 — design
 
-Day 3 build target. This is the plan the HTTP API will implement.
+Day 2 build status: **live**. Shared query engine (`mcp/lib/query.js`) backs the
+MCP tools and the HTTP API (`mcp/api.js`, systemd `sensormesh-api`, port 8793,
+public via cloudflared quick tunnel — see `mcp/public-url.txt`).
+`SENSORMESH_MOCK_SETTLEMENT=1` verifies the X-PAYMENT payload shape and settles
+with a mock transaction id, so the full 402 → pay → 200 round trip runs today;
+real settlement plugs into the `verifyPayment` / `settlePayment` seams.
+
+The rest of this doc is the original design (and still the production plan):
 
 ## Access tiers
 
@@ -10,7 +17,9 @@ Day 3 build target. This is the plan the HTTP API will implement.
 | MCP | `@jayjex/sensormesh-mcp` | free | LLM sessions, humans exploring |
 | metered HTTP | x402-gated API | per call | production apps |
 
-The first two ship in the day 1 build (done). The third gives an app-shaped endpoint: no full download, one filtered query per call, paid at settlement time.
+The first two ship in the day 1 build (done). The third is live in dev mode
+(mock settlement) since day 2; production settlement needs a facilitator and a
+real `payTo` wallet.
 
 ## Why per-call fits sensor data
 

@@ -1,11 +1,11 @@
 #!/bin/bash
 # sensormesh-api tunnel: own cloudflared quick tunnel (:8793), harvest URL to public-url.txt.
 # Standalone unit; JANGAN restart apimarket / x402-rest / fiatdock units.
-cd /home/uwuki/sensormesh/mcp
+cd /home/uwuki/money-mission/projects/sensormesh/mcp
 export PATH="/home/uwuki/.local/bin:/usr/local/bin:/usr/bin:/bin"
 
 rm -f tunnel.log public-url.txt
-/home/uwuki/x402-rest/bin/cloudflared tunnel --url "http://127.0.0.1:8793" --no-autoupdate > tunnel.log 2>&1 &
+/home/uwuki/money-mission/projects/x402-rest/bin/cloudflared tunnel --url "http://127.0.0.1:8793" --no-autoupdate > tunnel.log 2>&1 &
 CF_PID=$!
 
 PUB=""
